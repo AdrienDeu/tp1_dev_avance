@@ -1,11 +1,10 @@
 import {readFile, writeFile} from 'node:fs/promises';
-import {getDate, monSecret} from "./divers.js";
-import {NotFoundError} from "./errors.js";
+import {getDate } from "./divers.js";
 import {createHash} from 'node:crypto'
-import uuidv4, { uuid } from 'uuidv4';
+import uuidv4 from 'uuidv4';
 
 /* Chemin de stockage des blocks */
-const path = './data/blockchain.json'
+const path = 'src/data/blockchain.json'
 
 /**
  * Mes définitions
@@ -33,7 +32,12 @@ export async function findBlocks() {
  * @return {Promise<Block[]>}
  */
 export async function findBlock(partialBlock) {
-    // A coder
+    let blocks = await findBlocks();
+    if (blocks.length === 0) {
+        return null;
+    }
+    blocks = JSON.parse(blocks);
+    return blocks.find(block => block.id === partialBlock.id);
 }
 
 /**
@@ -41,12 +45,21 @@ export async function findBlock(partialBlock) {
  * @return {Promise<Block|null>}
  */
 export async function findLastBlock() {
-    // return new Promise(
-    //     resolve => {
-    //         resolve(findBlocks())
-    //     }
-    // )
+    let blocks = await findBlocks();
+    if (blocks.length === 0) {
+        return null;
+    }
+    blocks = JSON.parse(blocks);
+    return blocks[blocks.length - 1];
 }
+
+function generateSHA256(input) {
+    const hash = createHash('sha256');
+    hash.update(input);
+    return hash.digest('hex');
+}
+
+
 
 /**
  * Creation d'un block depuis le contenu json
@@ -54,11 +67,23 @@ export async function findLastBlock() {
  * @return {Promise<Block[]>}
  */
 export async function createBlock(contenu) {
-        let result;
-        result = "{ \"id\" : \"" + uuidv4.uuid() + "\", " +
-            "\"nom\" : \"" +  contenu.nom + "\", " +
-            "\"don\" : \"" + contenu.don + "\", " +
-            "\"date\" : \"" + getDate() + "\", " +
-            "\"chaine\" : " + "\"END\" }";
-        return JSON.parse(result);
+    let lastBlock = await findLastBlock();
+    let lastBlockHash = await lastBlock ? generateSHA256(JSON.stringify(lastBlock)) : '';
+    let result;
+    result = "{ \"id\" : \"" + uuidv4.uuid() + "\", " +
+        "\"nom\" : \"" +  contenu.nom + "\", " +
+        "\"don\" : \"" + contenu.don + "\", " +
+        "\"date\" : \"" + getDate() + "\", " +
+        "\"hash\" : \"" + lastBlockHash + "\", " +
+        "\"chaine\" : " + "\"END\" }";
+    let block = JSON.parse(result);
+
+    let existingContent = await readFile(path, {encoding: 'utf8'});
+    let blocks = existingContent ? JSON.parse(existingContent) : [];
+
+    blocks.push(block);
+
+    await writeFile(path, JSON.stringify(blocks, null, 2));
+
+    return block;
 }
