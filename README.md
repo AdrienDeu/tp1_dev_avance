@@ -2,4 +2,4 @@
 
 ## Introduction
 
-Ce TP concerne le développement de fonctionnalités d'ajout et de suppression de chaînes, dans le cadre d'une API déjà développée.
+Ce TP concerne le développement de fonctionnalités d'ajout de blocs de données au format JSON et de la récupération des chaînes, dans le cadre d'une API déjà développée.
